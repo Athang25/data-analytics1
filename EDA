@@ -1,0 +1,55 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Read the data from the CSV file
+data = pd.read_csv("menu.csv")
+
+# View the first few rows
+print(data.head())
+
+# Check for missing values and data types
+print(data.info())
+
+# Fill missing values for numeric columns with the mean
+data.fillna(data.mean(), inplace=True)
+
+# Drop rows with missing data
+data.dropna(inplace=True)
+
+# Clean column names
+data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_')
+
+# Summary statistics (mean, median, etc.)
+print(data.describe())
+
+# Example for specific column
+print(data['sales'].mean()) # Mean of sales
+print(data['sales'].std()) # Standard deviation of sales
+
+# Box plot of sales
+data['sales'].plot(kind='box')
+plt.show()
+
+# Convert 'date' column to datetime and set as index
+data['date'] = pd.to_datetime(data['date'])
+data.set_index('date', inplace=True)
+
+# Resample sales data to get monthly totals and plot
+monthly_sales = data['sales'].resample('M').sum()
+monthly_sales.plot(title="Monthly Sales")
+plt.show()
+
+# Group by 'customer_region' and calculate mean sales
+print(data.groupby('customer_region')['sales'].mean())
+
+# Group by 'product_category', sum sales, and sort descending
+product_sales = data.groupby('product_category')['sales'].sum().sort_values(ascending=False)
+print(product_sales)
+
+# Bar plot for top product categories
+product_sales.plot(kind='bar', title="Top Product Categories")
+plt.show()
+
+# Line plot for sales trends over time
+data['sales'].plot(title="Sales Trends Over Time")
+plt.show()
