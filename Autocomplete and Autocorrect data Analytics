@@ -1,0 +1,80 @@
+# Step 1: Import Libraries
+import pandas as pd
+import numpy as np
+import re
+from collections import Counter
+import nltk
+from nltk.util import ngrams
+from nltk.metrics import edit_distance
+from sklearn.metrics import precision_score, recall_score
+
+# Ensure you have the necessary NLTK packages
+nltk.download('punkt')
+
+# Step 2: Load Dataset
+# Replace with your dataset path
+# Assuming the dataset has a 'text' column
+data = pd.read_csv("text_data.csv")
+
+# Step 3: Preprocessing
+def preprocess_text(text):
+    # Remove special characters and numbers
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    # Convert to lowercase
+    text = text.lower()
+    # Tokenize
+    tokens = nltk.word_tokenize(text)
+    return tokens
+
+# Preprocess all text
+data['tokens'] = data['text'].apply(preprocess_text)
+
+# Flatten list of tokens
+all_tokens = [token for tokens in data['tokens'] for token in tokens]
+
+# Step 4: Create N-grams for Autocomplete
+# Generate n-grams (bigram example)
+bigrams = list(ngrams(all_tokens, 2))
+bigram_freq = Counter(bigrams)
+
+# Function for autocomplete suggestions
+def autocomplete(prefix, bigram_freq, n=5):
+    # Find all bigrams where the first word matches the prefix
+    suggestions = [(second_word, freq) for (first_word, second_word), freq in bigram_freq.items() if first_word == prefix]
+    # Sort by frequency and return top N suggestions
+    suggestions = sorted(suggestions, key=lambda x: x[1], reverse=True)
+    return [word for word, _ in suggestions[:n]]
+
+# Example usage
+prefix = "data"
+print(f"Autocomplete suggestions for '{prefix}': {autocomplete(prefix, bigram_freq)}")
+
+# Step 5: Implement Autocorrect
+# Create a vocabulary from tokens
+vocab = set(all_tokens)
+
+# Function for autocorrect
+def autocorrect(word, vocab, max_distance=2):
+    # Find words in vocab with edit distance <= max_distance
+    corrections = [v for v in vocab if edit_distance(word, v) <= max_distance]
+    # Return the most frequent correction (or None if no matches)
+    if corrections:
+        corrections = sorted(corrections, key=lambda x: all_tokens.count(x), reverse=True)
+        return corrections[0]
+    return word
+
+# Example usage
+misspelled_word = "dat"
+print(f"Autocorrect suggestion for '{misspelled_word}': {autocorrect(misspelled_word, vocab)}")
+
+# Step 6: Evaluate Performance (Dummy Data Example)
+# Ground truth and predictions for evaluation
+ground_truth = ["data", "science", "python"]
+predictions = [autocorrect(w, vocab) for w in ["dtaa", "scinece", "pythn"]]
+
+# Calculate precision and recall
+precision = precision_score(ground_truth, predictions, average='micro')
+recall = recall_score(ground_truth, predictions, average='micro')
+
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
