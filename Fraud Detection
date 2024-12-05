@@ -1,0 +1,62 @@
+# Step 1: Import Necessary Libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Step 2: Load Dataset
+# Replace the path with your actual dataset path (e.g., 'creditcard.csv')
+data = pd.read_csv("creditcard.csv")
+
+# Step 3: Data Preprocessing
+# Check for missing values
+print(data.isnull().sum())
+
+# Normalize the features (except 'Class' which is the target label)
+features = data.drop('Class', axis=1) # Drop the target column 'Class'
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(features)
+
+# Target variable: 'Class' (1 indicates fraud, 0 indicates non-fraud)
+target = data['Class']
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(features_scaled, target, test_size=0.2, random_state=42)
+
+# Step 4: Train a Random Forest Classifier
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Step 5: Model Evaluation
+# Make predictions on the test set
+y_pred = rf_model.predict(X_test)
+
+# Evaluate the model using confusion matrix, classification report, and AUC score
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n", conf_matrix)
+
+class_report = classification_report(y_test, y_pred)
+print("Classification Report:\n", class_report)
+
+# Calculate ROC AUC Score
+roc_auc = roc_auc_score(y_test, rf_model.predict_proba(X_test)[:, 1])
+print("ROC AUC Score:", roc_auc)
+
+# Step 6: Visualize the Results
+# Confusion Matrix Visualization
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', xticklabels=['Non-Fraud', 'Fraud'], yticklabels=['Non-Fraud', 'Fraud'])
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix')
+plt.show()
+
+# Feature Importance
+feature_importance = rf_model.feature_importances_
+plt.barh(data.columns[:-1], feature_importance)
+plt.xlabel('Feature Importance')
+plt.title('Feature Importance')
+plt.show()
